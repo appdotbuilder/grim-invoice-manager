@@ -1,9 +1,28 @@
+import { db } from '../db';
+import { invoicesTable } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import { type DeleteInvoiceInput } from '../schema';
 
-export async function deleteInvoice(input: DeleteInvoiceInput): Promise<{ success: boolean }> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is deleting an invoice from the database by ID.
-    // Should validate that the invoice exists before attempting to delete.
-    // Should return success status to confirm deletion.
-    return Promise.resolve({ success: true });
-}
+export const deleteInvoice = async (input: DeleteInvoiceInput): Promise<{ success: boolean }> => {
+  try {
+    // First check if the invoice exists
+    const existingInvoice = await db.select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, input.id))
+      .execute();
+
+    if (existingInvoice.length === 0) {
+      throw new Error(`Invoice with ID ${input.id} not found`);
+    }
+
+    // Delete the invoice
+    const result = await db.delete(invoicesTable)
+      .where(eq(invoicesTable.id, input.id))
+      .execute();
+
+    return { success: true };
+  } catch (error) {
+    console.error('Invoice deletion failed:', error);
+    throw error;
+  }
+};

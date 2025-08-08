@@ -1,20 +1,30 @@
+import { db } from '../db';
+import { invoicesTable } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import { type GetInvoiceInput, type Invoice } from '../schema';
 
-export async function getInvoice(input: GetInvoiceInput): Promise<Invoice> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching a single invoice by ID from the database.
-    // Should throw an error if invoice is not found.
-    return Promise.resolve({
-        id: input.id,
-        invoice_number: "INV-001",
-        client_name: "Placeholder Client",
-        client_email: "client@example.com",
-        amount_due: 1000.00,
-        issue_date: new Date(),
-        due_date: new Date(),
-        services_rendered: "Placeholder services",
-        paid: false,
-        created_at: new Date(),
-        updated_at: new Date()
-    } as Invoice);
-}
+export const getInvoice = async (input: GetInvoiceInput): Promise<Invoice> => {
+  try {
+    // Query invoice by ID
+    const result = await db.select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, input.id))
+      .execute();
+
+    // Check if invoice exists
+    if (result.length === 0) {
+      throw new Error(`Invoice with ID ${input.id} not found`);
+    }
+
+    const invoice = result[0];
+    
+    // Convert numeric fields back to numbers before returning
+    return {
+      ...invoice,
+      amount_due: parseFloat(invoice.amount_due) // Convert string back to number
+    };
+  } catch (error) {
+    console.error('Invoice retrieval failed:', error);
+    throw error;
+  }
+};
